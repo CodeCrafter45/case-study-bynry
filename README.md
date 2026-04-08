@@ -4,14 +4,15 @@ Candidate: Mahesh Kumbhar
 
 📌 Summary
 
-This repository contains analysis, improvements, and design decisions for a backend case study. It includes:
+This repository contains analysis, improvements, and design decisions for a backend case study.
+
+It includes:
 
 Code review of an existing API
 Identification of issues and their impact
 Improved solution approach
 Database design
 API design for low-stock alerts
-
 🧩 Part 1: Code Review & Debugging
 🚨 Issues Identified
 No input validation (missing/null values not handled)
@@ -21,19 +22,17 @@ No error handling (failures not managed)
 Incorrect assumption: product belongs to only one warehouse
 Price not validated (negative or invalid values allowed)
 Inventory created without checking existing records
-
 ⚠️ Impact in Production
 Duplicate SKUs → Data inconsistency
 Partial data saved → Product created but inventory missing
 Application crashes → Due to missing input validation
 Incorrect stock tracking
 Security risks → Invalid or malicious input
-
 ✅ Improved Approach (Logic)
 
-Since the original code lacks production safety, the improved logic ensures data consistency and reliability:
+The improved solution ensures data consistency and reliability:
 
-✔️ Steps:
+Steps:
 Validate required fields (name, sku, price, etc.)
 Check if SKU already exists
 Start a database transaction
@@ -41,29 +40,28 @@ Create product
 Create inventory entry
 Commit both together (atomic operation)
 Rollback in case of any failure
-
 💡 Pseudo Code
-Get request data
+data = request.json
 
-If name or sku is missing:
+if not data.get("name") or not data.get("sku"):
     return error
 
-Check if SKU already exists:
-    If yes → return error
+if sku_exists(data["sku"]):
+    return error
 
-Start transaction
+start_transaction()
 
-Create product
-Create inventory for that product
+try:
+    product = create_product(data)
+    create_inventory(product.id, data)
 
-If everything is successful:
-    Commit transaction
-Else:
-    Rollback transaction
+    commit_transaction()
+    return success
 
-Return success response
-
-Part 2: Database Design
+except:
+    rollback_transaction()
+    return error
+🗄️ Part 2: Database Design
 📊 Tables Structure
 Companies
 id (Primary Key)
@@ -95,66 +93,65 @@ product_id
 warehouse_id
 change
 timestamp
-
-❓ Missing Requirements (Clarifications Needed)
+❓ Missing Requirements
 What defines “recent sales activity”?
 Can a product have multiple suppliers?
 How are bundle products handled?
-Is the threshold fixed or dynamic?
+Is threshold fixed or dynamic?
 Can inventory go negative?
-
 🧠 Design Decisions
 SKU is unique to prevent duplication
 Separate Inventory table for multi-warehouse support
 Inventory logs for tracking stock changes
-Use of foreign keys for data integrity
-Indexing on SKU and product_id for performance optimization
-
-Part 3: API Implementation
+Foreign keys maintain relationships
+Indexing on SKU and product_id for performance
+🚀 Part 3: API Implementation
 📡 Endpoint
 GET /api/companies/{company_id}/alerts/low-stock
 ⚙️ Approach
 Extract company_id from request
 Fetch all warehouses of the company
 Retrieve inventory for those warehouses
-Check each product’s quantity against threshold
-Add low-stock products to alert list
+Compare quantity with threshold
+Add low-stock items to alert list
 Attach supplier information
-Return alerts with total count
+Return response
 💡 Pseudo Code
-Get company_id
+company_id = get_company_id()
 
-Fetch warehouses of company
+warehouses = get_warehouses(company_id)
 
-For each warehouse:
-    Get inventory
+alerts = []
 
-For each inventory item:
-    If quantity < threshold:
-        Add to alerts list
+for warehouse in warehouses:
+    inventory = get_inventory(warehouse)
 
-Return:
-    alerts list
-    total alerts count
+    for item in inventory:
+        if item.quantity < threshold:
+            alerts.append(item)
+
+return {
+    "alerts": alerts,
+    "count": len(alerts)
+}
 ⚠️ Edge Cases
 No warehouses found
-No inventory data available
+No inventory data
 Product has no supplier
 Stock is zero or negative
 Threshold value missing
 🔍 Assumptions
 Default threshold = 20
-Each product has one primary supplier
-“Recent sales activity” not defined → basic filtering assumed
-📎 Reference Document
+One primary supplier per product
+Recent sales logic not defined → basic filtering assumed
+📎 Reference
 
-Original submission (PDF):
-
+Original submission included in repository as PDF.
 
 ✅ Final Note
 
 This solution focuses on:
 
-Data consistency (atomic operations)
+Data consistency (atomic transactions)
 Scalable database design
 Clean and maintainable backend logic
