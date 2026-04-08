@@ -11,6 +11,7 @@ Identification of issues and their impact
 Improved solution approach
 Database design
 API design for low-stock alerts
+
 🧩 Part 1: Code Review & Debugging
 🚨 Issues Identified
 No input validation (missing/null values not handled)
@@ -20,12 +21,14 @@ No error handling (failures not managed)
 Incorrect assumption: product belongs to only one warehouse
 Price not validated (negative or invalid values allowed)
 Inventory created without checking existing records
+
 ⚠️ Impact in Production
 Duplicate SKUs → Data inconsistency
 Partial data saved → Product created but inventory missing
 Application crashes → Due to missing input validation
 Incorrect stock tracking
 Security risks → Invalid or malicious input
+
 ✅ Improved Approach (Logic)
 
 Since the original code lacks production safety, the improved logic ensures data consistency and reliability:
@@ -38,6 +41,7 @@ Create product
 Create inventory entry
 Commit both together (atomic operation)
 Rollback in case of any failure
+
 💡 Pseudo Code
 Get request data
 
@@ -58,7 +62,8 @@ Else:
     Rollback transaction
 
 Return success response
-🗄️ Part 2: Database Design
+
+Part 2: Database Design
 📊 Tables Structure
 Companies
 id (Primary Key)
@@ -90,19 +95,22 @@ product_id
 warehouse_id
 change
 timestamp
+
 ❓ Missing Requirements (Clarifications Needed)
 What defines “recent sales activity”?
 Can a product have multiple suppliers?
 How are bundle products handled?
 Is the threshold fixed or dynamic?
 Can inventory go negative?
+
 🧠 Design Decisions
 SKU is unique to prevent duplication
 Separate Inventory table for multi-warehouse support
 Inventory logs for tracking stock changes
 Use of foreign keys for data integrity
 Indexing on SKU and product_id for performance optimization
-🚀 Part 3: API Implementation
+
+Part 3: API Implementation
 📡 Endpoint
 GET /api/companies/{company_id}/alerts/low-stock
 ⚙️ Approach
